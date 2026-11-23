@@ -79,7 +79,7 @@ happens there, exactly once.
 - Each event id is stored in `webhook_events` (unique). A redelivered event is acknowledged and skipped. Recording the
   event and applying it commit in one transaction, so if applying fails, Pixelforge's retry tries again.
 - **Out of order:** a late `processing` after `succeeded` is ignored by the forward-only state machine.
-- **Before the POST returns:** our row id travels in `metadata.generation_id`, so a webhook can find its generation
+- **Before the POST returns:** our generation's UUID travels in `metadata.generation_key` (a UUID, not the row id, because row ids repeat across environments sharing a key), so a webhook can find its generation
   before we've stored Pixelforge's `gen_…` id.
 - **Lost submission:** if we gave up after timeouts but Pixelforge did create the generation, its webhook still
   updates the generation and bills it correctly.

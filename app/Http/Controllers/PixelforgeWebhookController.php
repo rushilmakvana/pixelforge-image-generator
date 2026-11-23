@@ -69,11 +69,13 @@ class PixelforgeWebhookController extends Controller
 
     private function findGeneration(array $remote): ?Generation
     {
-        // Our own id travels in metadata, so this works even before we've stored pixelforge_id.
-        $localId = $remote['metadata']['generation_id'] ?? null;
+        // Our generation's UUID travels in metadata, so this works even before we've stored pixelforge_id.
+        // It is a UUID rather than our row id because row ids repeat across environments (local, production)
+        // that share a Pixelforge key; matching on row id let one environment's webhook update another's row.
+        $key = $remote['metadata']['generation_key'] ?? null;
 
-        if ($localId !== null && ctype_digit((string) $localId)) {
-            $generation = Generation::find((int) $localId);
+        if (is_string($key) && $key !== '') {
+            $generation = Generation::where('idempotency_key', $key)->first();
 
             if ($generation && in_array($generation->pixelforge_id, [null, $remote['id'] ?? null], true)) {
                 return $generation;

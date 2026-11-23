@@ -46,7 +46,8 @@ class SubmitGeneration implements ShouldQueue
                 'quality' => $generation->quality,
                 'reference_images' => $generation->reference_images,
                 // Lets webhooks find our row even if they arrive before this response does.
-                'metadata' => ['generation_id' => (string) $generation->id],
+                // The UUID, not the row id: row ids repeat across environments that share a key.
+                'metadata' => ['generation_key' => $generation->idempotency_key],
             ], $generation->idempotency_key);
         } catch (PixelforgeException $e) {
             $this->handleRejection($generation, $service, $e);

@@ -80,7 +80,7 @@ class GenerationLifecycleTest extends TestCase
         (new SubmitGeneration($generation->id))->handle(app(PixelforgeClient::class), app(GenerationService::class));
 
         Http::assertSent(fn ($r) => $r->hasHeader('Idempotency-Key', $generation->idempotency_key)
-            && $r['metadata'] === ['generation_id' => (string) $generation->id]);
+            && $r['metadata'] === ['generation_key' => $generation->idempotency_key]);
         $this->assertSame(Generation::QUEUED, $generation->fresh()->status);
         $this->assertSame('gen_test', $generation->fresh()->pixelforge_id);
     }
@@ -153,6 +153,25 @@ class GenerationLifecycleTest extends TestCase
         $this->assertSame(Generation::PROCESSING, $generation->fresh()->status);
     }
 
+    public function test_webhook_for_another_environments_generation_does_not_touch_ours(): void
+    {
+        // Our generation was lost (failed before Pixelforge returned an id), so it has no pixelforge_id.
+        $generation = $this->pendingGeneration();
+        app(GenerationService::class)->failSubmission($generation, 'submission_failed', 'Lost.');
+
+        // Another environment sharing the key succeeded with a generation whose row id happens to match ours.
+        $foreign = $this->remote($generation, 'succeeded');
+        $foreign['id'] = 'gen_other_env';
+        $foreign['metadata'] = ['generation_id' => (string) $generation->id, 'generation_key' => 'a-different-uuid'];
+
+        $this->webhook('evt_1', 'generation.succeeded', $foreign)->assertNoContent();
+
+        $generation->refresh();
+        $this->assertSame(Generation::FAILED, $generation->status);
+        $this->assertNull($generation->pixelforge_id);
+        $this->assertSame(0, CreditTransaction::where('generation_id', $generation->id)->where('type', 'charge')->count());
+    }
+
     public function test_failed_generation_is_free(): void
     {
         $generation = $this->acceptedGeneration();
@@ -216,7 +235,7 @@ class GenerationLifecycleTest extends TestCase
             'size' => $generation->size,
             'quality' => $generation->quality,
             'reference_images' => [],
-            'metadata' => ['generation_id' => (string) $generation->id],
+            'metadata' => ['generation_key' => $generation->idempotency_key],
             'image_url' => $status === 'succeeded' ? 'https://pixelforge.test/img.png' : null,
             'image_url_expires_at' => $status === 'succeeded' ? '2026-11-21T10:00:00Z' : null,
             'usage' => $status === 'succeeded' ? [
