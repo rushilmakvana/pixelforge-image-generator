@@ -8,6 +8,11 @@ php artisan route:cache
 php artisan view:cache
 php artisan migrate --force
 
+# Free hosting has no shell, so admins can be granted via ADMIN_EMAIL (register first, then set it).
+if [ -n "${ADMIN_EMAIL:-}" ]; then
+    php artisan app:make-admin "$ADMIN_EMAIL" || true
+fi
+
 # Queue worker: submits generations to Pixelforge. The loop restarts it if it exits,
 # and --max-time recycles it hourly to keep memory in check.
 ( while true; do php artisan queue:work --sleep=1 --max-time=3600 || true; sleep 1; done ) &
