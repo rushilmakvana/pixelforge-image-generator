@@ -15,6 +15,9 @@ class CreditTransaction extends Model
 
     public const CHARGE = 'charge';
 
+    /** Manual correction that reverses a wrong charge; the original charge row stays for the audit trail. */
+    public const REFUND = 'refund';
+
     protected $guarded = ['id'];
 
     protected function casts(): array

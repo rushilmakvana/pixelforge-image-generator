@@ -10,7 +10,7 @@ defineProps<{
     packs: number[];
     transactions: {
         id: number;
-        type: 'purchase' | 'hold' | 'release' | 'charge';
+        type: 'purchase' | 'hold' | 'release' | 'charge' | 'refund';
         amount: string;
         positive: boolean;
         description: string | null;
@@ -28,7 +28,7 @@ const buy = (dollars: number) => {
     router.post(route('credits.store'), { dollars }, { preserveScroll: true, onFinish: () => (buying.value = null) });
 };
 
-const typeLabel = { purchase: 'Purchase', hold: 'Reserved', release: 'Reservation released', charge: 'Charge' };
+const typeLabel = { purchase: 'Purchase', hold: 'Reserved', release: 'Reservation released', charge: 'Charge', refund: 'Refund' };
 </script>
 
 <template>
