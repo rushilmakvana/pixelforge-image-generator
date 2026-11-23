@@ -20,7 +20,11 @@ RUN npm run build
 
 # --- 3. Runtime: FrankenPHP (Caddy + PHP in one binary) ---
 FROM dunglas/frankenphp:1-php8.3
-RUN install-php-extensions pdo_pgsql intl zip opcache pcntl bcmath
+RUN install-php-extensions pdo_pgsql intl zip opcache pcntl bcmath \
+    # The base image grants frankenphp the capability to bind ports < 1024. Hosts that drop
+    # capabilities (Render) then refuse to exec it ("Operation not permitted"). We listen on
+    # $PORT (> 1024), so remove it.
+    && setcap -r /usr/local/bin/frankenphp
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
