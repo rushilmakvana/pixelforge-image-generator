@@ -1,0 +1,36 @@
+# Render Blueprint: one free Docker web service + one free Postgres database.
+services:
+  - type: web
+    name: promptforge
+    runtime: docker
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: PromptForge
+      - key: APP_KEY # paste the output of `php artisan key:generate --show`
+        sync: false
+      - key: APP_URL # e.g. https://promptforge.onrender.com
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: promptforge-db
+          property: connectionString
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: PIXELFORGE_API_KEY
+        sync: false
+      - key: PIXELFORGE_WEBHOOK_SECRET
+        sync: false
+      - key: PIXELFORGE_MARKUP_BPS
+        value: "2500"
+
+databases:
+  - name: promptforge-db
+    plan: free

@@ -94,11 +94,20 @@ stop once everything is final.
 `completed_at`, because that is how `/v1/usage` buckets them. Each day shows Pixelforge's figure next to ours, with a
 ✓ or ✗.
 
-## Deploying (Laravel Cloud)
+## Deploying (Render, free tier)
 
-1. Push to GitHub and create a Laravel Cloud app from the repo, with a Postgres or MySQL database attached.
-2. Set the environment variables `PIXELFORGE_API_KEY` and `PIXELFORGE_WEBHOOK_SECRET`, using a **separate**
-   Pixelforge key for production.
-3. Enable a **queue worker** (`php artisan queue:work`) and the **scheduler**.
-4. Deploy commands: `php artisan migrate --force`.
-5. In the Pixelforge dashboard, set the production key's webhook URL to `https://<app>/webhooks/pixelforge`.
+The repo ships a `Dockerfile` and a `render.yaml` Blueprint. The free tier has no background workers, so
+`docker/start.sh` runs the web server (FrankenPHP), the queue worker and the scheduler in one container,
+and runs migrations on boot.
+
+1. In Render, choose **New → Blueprint** and pick this repo. It creates the web service and a free Postgres database.
+2. Fill in the secret variables: `APP_KEY` (from `php artisan key:generate --show`), `APP_URL`
+   (the service URL), `PIXELFORGE_API_KEY` and `PIXELFORGE_WEBHOOK_SECRET` (use a **separate** Pixelforge key for production).
+3. In the Pixelforge dashboard, set that key's webhook URL to `https://<app>.onrender.com/webhooks/pixelforge`.
+
+Free-tier trade-offs: the service sleeps after ~15 minutes idle (the first request then takes ~1 minute), and the
+scheduler doesn't run while it sleeps; any generation that missed a webhook is caught up by the polling fallback on wake.
+The free Postgres database expires after 30 days.
+
+On Laravel Cloud the same app runs without Docker: attach a database, set the same variables, enable a queue worker
+and the scheduler, and use `php artisan migrate --force` as the deploy command.
